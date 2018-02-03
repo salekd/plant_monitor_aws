@@ -1,6 +1,6 @@
 # Plant Monitor
 
-This repository describes how to setup **Amazon Web Services** for storing and analyzing data from Raspberry Pi's. The solution consists of running **PostgreSQL** database, **Flask** REST API and **JupyterHub** in an **Amazon EC2** instance.
+This repository describes how to setup **Amazon Web Services** for storing and analyzing plant monitor data. The solution consists of running **PostgreSQL** database, **Flask** REST API and **JupyterHub** in an **Amazon EC2** instance.
 
 The installation procedure is documented here https://github.com/salekd/plant_monitor_aws/wiki
 
