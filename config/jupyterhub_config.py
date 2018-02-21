@@ -268,7 +268,13 @@ c.JupyterHub.port = 8000
 #              'environment':
 #          }
 #      ]
-#c.JupyterHub.services = []
+c.JupyterHub.services = [
+    {
+        'name': 'cull-idle',
+        'admin': True,
+        'command': 'python cull_idle_servers.py --timeout=3600'.split(),
+    }
+]
 
 ## The class to use for spawning single-user servers.
 #  
