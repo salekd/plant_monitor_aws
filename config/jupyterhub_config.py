@@ -671,7 +671,7 @@ c.Authenticator.admin_users = {'ec2-user'}
 #  restrictions the authenticator has in place.
 #  
 #  If empty, does not perform any additional restriction.
-c.Authenticator.whitelist = {'ec2-user', 'plant_monitor'}
+c.Authenticator.whitelist = {'ec2-user', 'plant_monitor', 'student01', 'student02', 'student03', 'student04', 'student05', 'student06', 'student07', 'student08', 'student09', 'student10', 'teacher01', 'teacher02', 'teacher03'}
 
 #------------------------------------------------------------------------------
 # LocalAuthenticator(Authenticator) configuration
