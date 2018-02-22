@@ -25,7 +25,7 @@ ALLOWED_EXTENSIONS = ['jpg']
 api = Api(app, api_version='0.0', api_spec_url='/api/swagger')
 
 
-class MeasurementModel(Schema):
+class MifloraModel(Schema):
     type = 'object'
     properties = {
         'device': {
@@ -49,6 +49,48 @@ class MeasurementModel(Schema):
     }
 
 
+class BME280Model(Schema):
+    type = 'object'
+    properties = {
+        'device': {
+            'type': 'string'
+        },
+        'timestamp': {
+            'type': 'string'
+        },
+        'temperature': {
+            'type': 'number'
+        },
+        'pressure': {
+            'type': 'number'
+        },
+        'humidity': {
+            'type': 'number'
+        }
+    }
+
+
+class SI1145Model(Schema):
+    type = 'object'
+    properties = {
+        'device': {
+            'type': 'string'
+        },
+        'timestamp': {
+            'type': 'string'
+        },
+        'visible': {
+            'type': 'number'
+        },
+        'IR': {
+            'type': 'number'
+        },
+        'UV': {
+            'type': 'number'
+        }
+    }
+
+
 class ErrorModel(Schema):
     type = 'object'
     properties = {
@@ -58,23 +100,23 @@ class ErrorModel(Schema):
     }
 
 
-class MeasurementResource(Resource):
+class MifloraResource(Resource):
     @swagger.doc({
         'tags': ['measurement'],
-        'description': 'Adds a measurement',
+        'description': 'Adds a measurement from the plant sensor',
         'parameters': [
             {
                 'name': 'measurement',
                 'description': 'Measurement that needs to be added to a csv file and to the database',
                 'in': 'body',
-                'schema': MeasurementModel,
+                'schema': MifloraModel,
                 'required': True,
             }
         ],
         'responses': {
             '201': {
                 'description': 'Added measurement',
-                'schema': MeasurementModel
+                'schema': MifloraModel
             }
         }
     })
@@ -83,7 +125,7 @@ class MeasurementResource(Resource):
 
         # Validate request body with schema model
         try:
-            measurement = MeasurementModel(**request.get_json())
+            measurement = MifloraModel(**request.get_json())
         except ValueError as e:
             return ErrorModel(**{'message': e.args[0]}), 400
         print(measurement)
@@ -104,7 +146,101 @@ class MeasurementResource(Resource):
 
         return measurement, 201
 
-api.add_resource(MeasurementResource, '/measurement')
+api.add_resource(MifloraResource, '/measurement')
+
+
+class BME280Resource(Resource):
+    @swagger.doc({
+        'tags': ['measurement'],
+        'description': 'Adds a measurement from the BME280 sensor',
+        'parameters': [
+            {
+                'name': 'measurement',
+                'description': 'Measurement that needs to be added to a csv file and to the database',
+                'in': 'body',
+                'schema': BME280Model,
+                'required': True,
+            }
+        ],
+        'responses': {
+            '201': {
+                'description': 'Added measurement',
+                'schema': BME280Model
+            }
+        }
+    })
+    def post(self):
+        # Validate request body with schema model
+        try:
+            measurement = BME280Model(**request.get_json())
+        except ValueError as e:
+            return ErrorModel(**{'message': e.args[0]}), 400
+        print(measurement)
+
+        # Make sure the entries are in the correct order
+        keys = ['timestamp', 'temperature', 'pressure', 'humidity']
+        ordered = OrderedDict([(key, measurement[key]) for key in keys])
+
+        # Append to a csv file for the device
+        csvfile = "/data/measurements/{}.csv".format(measurement['device'].replace(':', ''))
+        with open(csvfile, "a") as f:
+            f.write(", ".join([str(x) for x in ordered.values()]) + '\n')
+
+        # Insert into PostgreSQL database
+        query = """INSERT INTO bme280 (device, time, temperature, pressure, humidity)
+    VALUES ('%(device)s', '%(timestamp)s', %(temperature)s, %(pressure)s, %(humidity)s);""" % measurement
+        db.engine.execute(query)
+
+        return measurement, 201
+
+api.add_resource(BME280Resource, '/bme280')
+
+
+class SI1145Resource(Resource):
+    @swagger.doc({
+        'tags': ['measurement'],
+        'description': 'Adds a measurement from the SI1145 sensor',
+        'parameters': [
+            {
+                'name': 'measurement',
+                'description': 'Measurement that needs to be added to a csv file and to the database',
+                'in': 'body',
+                'schema': SI1145Model,
+                'required': True,
+            }
+        ],
+        'responses': {
+            '201': {
+                'description': 'Added measurement',
+                'schema': SI1145Model
+            }
+        }
+    })
+    def post(self):
+        # Validate request body with schema model
+        try:
+            measurement = SI1145Model(**request.get_json())
+        except ValueError as e:
+            return ErrorModel(**{'message': e.args[0]}), 400
+        print(measurement)
+
+        # Make sure the entries are in the correct order
+        keys = ['timestamp', 'visible', 'IR', 'UV']
+        ordered = OrderedDict([(key, measurement[key]) for key in keys])
+
+        # Append to a csv file for the device
+        csvfile = "/data/measurements/{}.csv".format(measurement['device'].replace(':', ''))
+        with open(csvfile, "a") as f:
+            f.write(", ".join([str(x) for x in ordered.values()]) + '\n')
+
+        # Insert into PostgreSQL database
+        query = """INSERT INTO si1145 (device, time, visible, IR, UV)
+    VALUES ('%(device)s', '%(timestamp)s', %(visible)s, %(IR)s, %(UV)s);""" % measurement
+        db.engine.execute(query)
+
+        return measurement, 201
+
+api.add_resource(SI1145Resource, '/si1145')
 
 
 class ImageResource(Resource):
