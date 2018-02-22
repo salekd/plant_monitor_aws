@@ -182,7 +182,7 @@ class BME280Resource(Resource):
         ordered = OrderedDict([(key, measurement[key]) for key in keys])
 
         # Append to a csv file for the device
-        csvfile = "/data/measurements/{}.csv".format(measurement['device'].replace(':', ''))
+        csvfile = "/data/measurements/{}.csv".format(measurement['device'])
         with open(csvfile, "a") as f:
             f.write(", ".join([str(x) for x in ordered.values()]) + '\n')
 
@@ -229,7 +229,7 @@ class SI1145Resource(Resource):
         ordered = OrderedDict([(key, measurement[key]) for key in keys])
 
         # Append to a csv file for the device
-        csvfile = "/data/measurements/{}.csv".format(measurement['device'].replace(':', ''))
+        csvfile = "/data/measurements/{}.csv".format(measurement['device'])
         with open(csvfile, "a") as f:
             f.write(", ".join([str(x) for x in ordered.values()]) + '\n')
 
