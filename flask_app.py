@@ -91,6 +91,21 @@ class SI1145Model(Schema):
     }
 
 
+class PumpModel(Schema):
+    type = 'object'
+    properties = {
+        'device': {
+            'type': 'string'
+        },
+        'timestamp': {
+            'type': 'string'
+        },
+        'duration': {
+            'type': 'number'
+        }
+    }
+
+
 class ErrorModel(Schema):
     type = 'object'
     properties = {
@@ -241,6 +256,53 @@ class SI1145Resource(Resource):
         return measurement, 201
 
 api.add_resource(SI1145Resource, '/si1145')
+
+
+class PumpResource(Resource):
+    @swagger.doc({
+        'tags': ['pump'],
+        'description': 'Adds a pump watering duration',
+        'parameters': [
+            {
+                'name': 'pump',
+                'description': 'Pump watering duration that needs to be added to a csv file and to the database',
+                'in': 'body',
+                'schema': PumpModel,
+                'required': True,
+            }
+        ],
+        'responses': {
+            '201': {
+                'description': 'Added pump watering duration',
+                'schema': PumpModel
+            }
+        }
+    })
+    def post(self):
+        # Validate request body with schema model
+        try:
+            pump_log = PumpModel(**request.get_json())
+        except ValueError as e:
+            return ErrorModel(**{'message': e.args[0]}), 400
+        print(pump_log)
+
+        # Make sure the entries are in the correct order
+        keys = ['timestamp', 'duration']
+        ordered = OrderedDict([(key, pump_log[key]) for key in keys])
+
+        # Append to a csv file for the device
+        csvfile = "/data/measurements/pump_{}.csv".format(pump_log['device'].replace(':', ''))
+        with open(csvfile, "a") as f:
+            f.write(", ".join([str(x) for x in ordered.values()]) + '\n')
+
+        # Insert into PostgreSQL database
+        query = """INSERT INTO pump (device, time, duration)
+    VALUES ('%(device)s', '%(timestamp)s', %(duration)s);""" % pump_log
+        db.engine.execute(query)
+
+        return pump_log, 201
+
+api.add_resource(PumpResource, '/pump')
 
 
 class ImageResource(Resource):
